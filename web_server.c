@@ -316,36 +316,50 @@ void upload_resorce(struct client_info *client,const char *path){
 void uploadfile(struct client_info *client){
 
     char *filename = strstr(client->request, "filename=");
+    char *content = strstr(filename,"Content-Type");
+    content = strstr(content, "\r\n");
     char *boundary = strstr(client->request,"boundary=----");
     char *end_boundary = strstr(boundary,"\r");
-    
     char *end_filename = strstr(filename,"\r\n");
     
-    char *type = strstr(filename,"Content-Type: ");
-    char *end_type = strstr(type,"\r\n\r\n");
     *end_filename = 0;
-    *end_type = 0;
     *end_boundary = 0;
  
     int a = strlen(filename);
-    int b = strlen(type);
     int c = strlen(boundary);
     char path[128];
-    char filetype[128];
-    char edge[128];
+
+    char edge[200];
+    char edge2[200]={'-','-','\0'};
     strncpy(path,filename+10,a-11);
     path[a-11] = '\0';
-    strncpy(filetype,type+14,b-14);
-    strncpy(edge,boundary+9,c-10);
-    edge[c-10] = '\0';
-    char *context = end_type + 4;
-    char *end_context = strstr(context,edge);
-    *(end_context - 4) = 0;
+    strncpy(edge,boundary+9,c-9);
+    strncat(edge2,edge,c-9);
+  
+    char real_content[MAX_REQUEST_SIZE];
+    memset(real_content, '\0', MAX_REQUEST_SIZE);
+
+    long long int i = 4;
+
+    while (i < 50000 + 4)
+    {
+        if (!strncmp(&content[i], edge2, strlen(edge2)))
+            {
+                
+                break;
+            }
+            real_content[i - 4] = content[i];
+            i++;
+    }
+   
+    
+    fwrite(real_content,1,MAX_REQUEST_SIZE,stdout);
+  
     char full_path[256];
     sprintf(full_path, "upload/%s", path);
  
     FILE *fp = fopen(full_path,"wb");
-    fwrite(context,sizeof(char),strlen(context),fp);
+    fwrite(real_content,1,i+4,fp);
     fclose(fp);
     
     upload_resorce(client,full_path);
@@ -420,7 +434,9 @@ int main() {
                             send_400(client);
                         } 
                        else if (strncmp("POST /", client->request, 6) == 0){
-                        
+                            //fwrite(client->request,1,sizeof(client->request),stdout);
+                            char *filename = strstr(client->request, "filename=");
+                            //fwrite(filename,1,MAX_REQUEST_SIZE,stdout);
                             uploadfile(client);
 
                         }

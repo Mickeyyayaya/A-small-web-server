@@ -352,8 +352,6 @@ void uploadfile(struct client_info *client){
             i++;
     }
    
-    
-    fwrite(real_content,1,MAX_REQUEST_SIZE,stdout);
   
     char full_path[256];
     sprintf(full_path, "upload/%s", path);
